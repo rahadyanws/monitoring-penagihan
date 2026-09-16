@@ -5,6 +5,8 @@ use App\Http\Controllers\DashboardDabesController;
 use App\Http\Controllers\DashboardKodeKelompokController;
 use App\Http\Controllers\DashboardLembarController;
 use App\Http\Controllers\DashboardPoskoPetugasController;
+use App\Http\Controllers\LogSinkronController;
+use App\Http\Controllers\UploadExcelController;
 use Illuminate\Support\Facades\Route;
 
 // PROTOTYPE PRESENTASI - sesuai Site Map di DESIGN.md §1.A (Modul 1: DASHBOARD & MONITORING)
@@ -19,3 +21,9 @@ Route::prefix('dashboard')->name('dashboard.')->group(function () {
     Route::get('/lembar', [DashboardLembarController::class, 'index'])->name('lembar');
     Route::get('/lembar/detail', [DashboardLembarController::class, 'detail'])->name('lembar.detail');
 });
+
+// Modul Data Transaksi (baru): Upload Data & Log Sinkron
+Route::get('/upload-excel', [UploadExcelController::class, 'create'])->name('upload-excel.create');
+Route::post('/upload-excel', [UploadExcelController::class, 'store'])->name('upload-excel.store');
+Route::get('/log-sinkron', [LogSinkronController::class, 'index'])->name('log-sinkron.index');
+Route::get('/log-sinkron/{log}', [LogSinkronController::class, 'show'])->name('log-sinkron.show');

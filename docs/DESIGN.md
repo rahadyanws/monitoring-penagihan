@@ -1,11 +1,5 @@
 # DESIGN SPECIFICATION: SISTEM MONITORING PENAGIHAN PLN UP3 INDRAMAYU
 
-## 0. Alur Bisnis Sumber Data (Konteks Sebelum Desain UI)
-
-Sebelum data tampil di dashboard manapun, terdapat proses 2 lane (lihat `ARCHITECTURE.md` §1.1):
-`Super Admin ekstrak data dari Back Office PLN Pusat → Analisis → Import ke Aplikasi → Data terupload → Filter/Dashboard`.
-Seluruh wireframe di bawah ini adalah representasi dari tahap **"Filter by ..."** — yaitu titik di mana data yang sudah diupload ditampilkan, difilter, dan di-drill-down oleh pengguna.
-
 ## 1. Information Architecture (IA) & Navigation Structure
 
 Sistem menggunakan layout standar dashboard enterprise PLN: **Sidebar Navigation (Kiri)**, **Top Navigation Bar (Header)**, dan **Dynamic Content Area**.
@@ -62,12 +56,10 @@ Sistem menggunakan layout standar dashboard enterprise PLN: **Sidebar Navigation
 ### Halaman 1: Dashboard Posko & Petugas
 *Fokus:* Evaluasi pencapaian target harian dan bulanan terhadap batas toleransi (*Threshold Tgl 20*) serta *gap* yang harus ditagih.
 
-> **Catatan open item**: PRD menyebut "Posko" dan "Petugas" sebagai 2 dashboard terpisah (FR-04a/FR-04b), sedangkan wireframe ini menggabungkan keduanya dalam satu halaman dengan level agregasi berbeda (grafik = level Posko, tabel = level Petugas). Perlu dikonfirmasi ke client apakah cukup 1 halaman dengan toggle "Lihat per Posko / Lihat per Petugas", atau memang harus 2 halaman/menu terpisah di sidebar.
-
 ```
 +----------------------------------------------------------------------------------------------------+
 | DASHBOARD POSKO & PETUGAS                                                                          |
-| Filter: [ ULP: Indramayu Kota v ] [ Posko: Semua/Kota1/Kota2/Kota3/Lohbener/Arahan v ] [ Periode v ]|
+| Filter: [ ULP: Indramayu Kota v ] [ Posko: Semua Posko v ] [ Periode: 2026-09 v ] [ Terapkan ]      |
 +----------------------------------------------------------------------------------------------------+
 | [ KPI METRICS ]                                                                                    |
 | +--------------------+ +--------------------+ +--------------------+ +--------------------+       |
@@ -229,5 +221,103 @@ Sistem menggunakan layout standar dashboard enterprise PLN: **Sidebar Navigation
   | Total Tunggakan (3 Lembar): Rp 1.392.560                                             |
   |                                                                                      |
   | Tindakan Cepat: [ Cetak Surat Peringatan (SP) ]  [ Jadwalkan Pemutusan Sementara ]   |
+  +--------------------------------------------------------------------------------------+
+```
+
+---
+
+### Halaman 6: Manajemen Data - Upload Data Excel
+*Fokus:* Antarmuka pengunggahan berkas bulk (*Master Data*, *Daily Transaction*, *Monitoring Target*), pemilihan periode rekening, serta validasi awal sebelum tugas dikirim ke antrean pekerja (*queue worker*).
+
+```
++----------------------------------------------------------------------------------------------------+
+| UPLOAD DATA EXCEL                                                                                  |
+| Navigasi: Data & Import > Upload Data                                                              |
++----------------------------------------------------------------------------------------------------+
+| [ INFORMASI & PETUNJUK FORMAT ]                                                                    |
+| (i) Pastikan format file sesuai template resmi PLN (.xls / .xlsx).                                 |
+|     File yang diunggah akan diproses di latar belakang (background queue).                         |
+|     Download template: [ Unduh Template Master ]  [ Unduh Template Transaksi ]                     |
++----------------------------------------------------------------------------------------------------+
+| [ FORMULIR PENGUNGGAHAN BERKAS ]                                                                   |
+|                                                                                                    |
+| 1. Jenis Data Rekening:                                                                            |
+|    (*) Master Data Bulanan (DKRP / Saldo Piutang)                                                  |
+|    ( ) Transaksi Pembayaran Harian                                                                 |
+|    ( ) Monitoring Target Saldo Petugas                                                             |
+|                                                                                                    |
+| 2. Periode Bulan Rekening (THBLREK):                                                               |
+|    [ 2026-09 (September 2026)      v ]                                                            |
+|                                                                                                    |
+| 3. Unit Layanan Pelanggan (ULP):                                                                   |
+|    [ 53403 - ULP Indramayu Kota     v ]                                                            |
+|                                                                                                    |
+| 4. Pilih Berkas Excel:                                                                             |
+|    +---------------------------------------------------------------------------------------------+ |
+|    |                                                                                             | |
+|    |                      [ Icon Drag & Drop / File ]                                            | |
+|    |         Tarik dan lepas file Excel (.xls, .xlsx) di sini atau Klik untuk Telusuri           | |
+|    |                                Maksimal ukuran: 50 MB                                       | |
+|    |                                                                                             | |
+|    +---------------------------------------------------------------------------------------------+ |
+|    File terpilih: MASTER DATA_SEPTEMBER_2026.xls (8.3 MB)                      [ Hapus File (X) ]  |
+|                                                                                                    |
+| [ Batal ]                                                    [ Upload & Proses Antrean (Queue) ]   |
++----------------------------------------------------------------------------------------------------+
+| [ STATUS AKTIVITAS UPLOAD TERAKHIR ]                                                               |
+| • DAILY TRANSACTION_20260910.xlsx - Selesai (3.902 baris berhasil diproses)  [Lihat Detail Log]    |
++----------------------------------------------------------------------------------------------------+
+```
+
+---
+
+### Halaman 7: Manajemen Data - Log Sinkronisasi
+*Fokus:* Pemantauan status pemrosesan berkas secara *asynchronous*, pelacakan progres baris (total/sukses/gagal), pesan kesalahan validasi, serta rincian waktu eksekusi antrean.
+
+```
++----------------------------------------------------------------------------------------------------+
+| LOG SINKRONISASI & RIWAYAT UPLOAD                                                                  |
+| Navigasi: Data & Import > Log Sinkron                                                              |
++----------------------------------------------------------------------------------------------------+
+| [ FILTER RIWAYAT ]                                                                                 |
+| Jenis Data: [ Semua Jenis v ]  Status: [ Semua Status v ]  Rentang Tgl: [ 01/09/2026 - 15/09/2026 ]|
+| [ Terapkan Filter ]                                                                                |
++----------------------------------------------------------------------------------------------------+
+| [ STATUS ANTREAN WORKER SAAT INI ]                                                                 |
+| • Status Worker: AKTIF (2 Daemon berjalan) | Antrean Tersisa: 1 Berkas Sedang Diproses             |
++----------------------------------------------------------------------------------------------------+
+| [ TABEL RIWAYAT SINKRONISASI BERKAS ]                                      [ Cari File: __________ ]|
+| +----+-------------+-------------------------------+------------+----------+-----------+---------+ |
+| | ID | Tanggal/Jam | Nama Berkas                   | Jenis Data | Baris    | Status    | Aksi    | |
+| +----+-------------+-------------------------------+------------+----------+-----------+---------+ |
+| |105 | 11/09 09:15 | TARGET_SEPT_2026.xlsx         | TARGET     | 10/10    | COMPLETED | [Detail]| |
+| |104 | 11/09 08:30 | DAILY_TRX_20260910.xlsx       | TRANSAKSI  | 3902/3902| COMPLETED | [Detail]| |
+| |103 | 11/09 08:10 | MASTER_DATA_202609.xls        | MASTER     | 12194/.. | PROCESSING| [Detail]| |
+| |    |             | (Progress: 8.500 / 12.194 baris - 70%)                    | [Progress]|         |
+| |102 | 10/09 17:00 | DAILY_TRX_ERR_FORMAT.xlsx     | TRANSAKSI  | 0/150    | FAILED    | [Error] | |
+| +----+-------------+-------------------------------+------------+----------+-----------+---------+ |
+| Menampilkan 1 - 4 dari 4 aktivitas sinkronisasi                         [ < Prev ] [ 1 ] [ Next > ]|
++----------------------------------------------------------------------------------------------------+
+
+* KETIKA TOMBOL [Error] ATAU [Detail] PADA BARIS DI-KLIK, MUNCUL MODAL POP-UP AUDIT:
+
+  +--------------------------------------------------------------------------------------+
+  | RINCIAN LOG AUDIT UPLOAD #102 - FAILED                                               |
+  +--------------------------------------------------------------------------------------+
+  | Nama Berkas       : DAILY_TRX_ERR_FORMAT.xlsx                                        |
+  | Diunggah Oleh     : Admin ULP Indramayu Kota                                         |
+  | Waktu Mulai       : 10/09/2026 17:00:12                                              |
+  | Selesai / Gagal   : 10/09/2026 17:00:18                                              |
+  |                                                                                      |
+  | Status Ringkasan  :                                                                  |
+  | - Total Baris     : 150 baris                                                        |
+  | - Berhasil        : 0 baris                                                          |
+  | - Gagal Divalidasi: 150 baris                                                        |
+  |                                                                                      |
+  | Pesan Kesalahan Sistem:                                                              |
+  | [ERROR_HEADER_MISMATCH] Kolom wajib 'IDPEL' atau 'RpTagihan' tidak ditemukan pada    |
+  | baris pertama lembar Sheet1. Mohon gunakan template transaksi harian standar PLN.    |
+  |                                                                                      |
+  | Tindakan: [ Unduh File Log Error (.txt) ]                            [ Tutup Modal ] |
   +--------------------------------------------------------------------------------------+
 ```

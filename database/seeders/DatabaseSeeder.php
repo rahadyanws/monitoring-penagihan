@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             OrganisasiSeeder::class,
             PelangganTagihanSeeder::class,
             MonitoringTargetSeeder::class,
+            UploadLogSeeder::class,
         ]);
     }
 }
